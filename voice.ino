@@ -5,7 +5,7 @@ led2 = 10, //Connect LED 2 To Pin #3
 led3 = 12, //Connect LED 3 To Pin #4 
 led4 = 5, //Connect LED 4 To Pin #5 
 led5 = 6; //Connect LED 5 To Pin #6 
-//--------------------------Call A Function-------------------------------//  
+
 void allon(){
      digitalWrite(led1, HIGH); 
      digitalWrite(led2, HIGH); 
@@ -20,7 +20,7 @@ void alloff(){
      digitalWrite(led4, LOW); 
      digitalWrite(led5, LOW);
 }
-//-----------------------------------------------------------------------//  
+
 void setup() {
   Serial.begin(9600);
   pinMode(led1, OUTPUT); 
