@@ -1,0 +1,341 @@
+Imports System.Math
+Public Class Home
+    Dim comOpen As Boolean
+    Dim readbuffert As String
+    Dim readbufferh As String
+    Dim readbufferg As String
+
+    Private Sub Home_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        Dim comPorts As String() = System.IO.Ports.SerialPort.GetPortNames
+
+        If comPorts.Count < 1 Then
+            'If there are not ports connected, show an error and close the program.
+            MsgBox("Tidak ada port arduino terdeteksi. jika arduino telah terhubung, silakan klik refresh pada tab file > connect to arduino")
+            'Me.Close()
+        Else
+            'PortToolStripMenuItem.Items.AddRange(comPorts)
+            PortToolStripMenuItem.Text = comPorts(0)
+        End If
+        If PortToolStripMenuItem.Text = "" Then
+            RefreshPortToolStripMenuItem.Enabled = True
+        End If
+    End Sub
+
+    Private Sub RefreshPortToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles RefreshPortToolStripMenuItem.Click
+        Dim comPorts As String() = System.IO.Ports.SerialPort.GetPortNames
+        If comPorts.Count < 1 Then
+            'If there are not ports connected, show an error and close the program.
+            MsgBox("Tidak ada port arduino terdeteksi, silakan cek kembali koneksi port arduino")
+            'Me.Close()
+        Else
+            'PortToolStripMenuItem.Items.AddRange(comPorts)
+            PortToolStripMenuItem.Text = comPorts(0)
+        End If
+    End Sub
+
+    Private Sub SambungkanToolStripMenuItem_click(sender As Object, e As EventArgs) Handles SambungkanToolStripMenuItem.Click
+        If PortToolStripMenuItem.Text = "" Then
+            MsgBox("Arduino tidak terdeteksi oleh program")
+            Exit Sub
+        End If
+        With SerialPort1
+            .PortName = PortToolStripMenuItem.Text
+            .Parity = IO.Ports.Parity.None
+            .DataBits = 8
+            .StopBits = IO.Ports.StopBits.One
+            .Handshake = IO.Ports.Handshake.None
+            .RtsEnable = False
+            .ReceivedBytesThreshold = 1
+            .NewLine = vbCr
+            .ReadTimeout = 10000
+        End With
+
+        Try
+            SerialPort1.Open()
+            comOpen = SerialPort1.IsOpen
+        Catch ex As Exception
+            comOpen = False
+            MsgBox("koneksi arduino telah terputus", MsgBoxStyle.AbortRetryIgnore)
+        End Try
+        PutuskanKoneksiToolStripMenuItem.Enabled = True
+        SambungkanToolStripMenuItem.Enabled = False
+        RefreshPortToolStripMenuItem.Enabled = False
+    End Sub
+
+    Private Sub PutuskanKoneksiToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles PutuskanKoneksiToolStripMenuItem.Click
+        SerialPort1.Write("e")
+
+        SerialPort1.Close()
+        SambungkanToolStripMenuItem.Enabled = True
+        RefreshPortToolStripMenuItem.Enabled = True
+        PutuskanKoneksiToolStripMenuItem.Enabled = False
+    End Sub
+
+    Public Sub SerialPort1_DataReceived(ByVal sender As System.Object,
+                                         ByVal e As System.IO.Ports.SerialDataReceivedEventArgs) _
+                                         Handles SerialPort1.DataReceived
+        If comOpen Then
+
+            Try
+                readbufferg = SerialPort1.ReadLine.Split(",")(0)
+                readbuffert = SerialPort1.ReadLine.Split(",")(1)
+                readbufferh = SerialPort1.ReadLine.Split(",")(2)
+            Catch ex As Exception
+            End Try
+        End If
+    End Sub
+
+    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+        If comOpen = False Then
+            MsgBox("sambungkan arduino terlebih dahulu")
+            Exit Sub
+        End If
+
+        If MessageBox.Show("hidupkan TV?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) =
+            DialogResult.No Then
+            Exit Sub
+        End If
+        SerialPort1.Write("TV")
+        LabelTV.Text = "hidup"
+        simpan()
+    End Sub
+
+    Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
+        If comOpen = False Then
+            MsgBox("sambungkan arduino terlebih dahulu")
+            Exit Sub
+        End If
+
+        If MessageBox.Show("matikan TV?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) =
+            DialogResult.No Then
+            Exit Sub
+        End If
+        SerialPort1.Write("z")
+        LabelTV.Text = "mati"
+        simpan()
+    End Sub
+
+    Private Sub TimerWaktu_Tick(sender As Object, e As EventArgs) Handles TimerWaktu.Tick
+        ToolStripLabelDate.Text = Format(Now, "d-MMMM-yyyy")
+        ToolStripLabelTime.Text = Format(Now, "HH:mm:ss")
+    End Sub
+
+    Private Sub simpan()
+        Call bukakoneksi()
+        Dim jam = Format(Now, "HH:mm:ss")
+        Dim lokasidb = "insert into tbl_log (tanggal, waktu, TV, AC, Kipas, Dispenser, Lampu, Komputer) values(@tanggal, @waktu, @TV, @AC, @Kipas, @Dispenser, @Lampu, @Komputer)"
+        cmd = New SqlClient.SqlCommand(lokasidb, con)
+        cmd.Parameters.AddWithValue("@tanggal", Now)
+        cmd.Parameters.AddWithValue("@waktu", jam)
+        cmd.Parameters.AddWithValue("@TV", LabelTV.Text)
+        cmd.Parameters.AddWithValue("@AC", LabelAC.Text)
+        cmd.Parameters.AddWithValue("@Kipas", LabelKipas.Text)
+        cmd.Parameters.AddWithValue("@Dispenser", LabelDispenser.Text)
+        cmd.Parameters.AddWithValue("@Lampu", LabelLampu.Text)
+        cmd.Parameters.AddWithValue("@Komputer", LabelKomputer.Text)
+        cmd.ExecuteNonQuery()
+        con.Dispose()
+        con.Close()
+
+    End Sub
+
+    Private Sub Button4_Click(sender As Object, e As EventArgs) Handles Button4.Click
+        If comOpen = False Then
+            MsgBox("sambungkan arduino terlebih dahulu")
+            Exit Sub
+        End If
+
+        If MessageBox.Show("hidupkan AC?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) =
+            DialogResult.No Then
+            Exit Sub
+        End If
+        SerialPort1.Write("2")
+        LabelAC.Text = "hidup"
+        simpan()
+    End Sub
+
+    Private Sub Button3_Click(sender As Object, e As EventArgs) Handles Button3.Click
+        If comOpen = False Then
+            MsgBox("sambungkan arduino terlebih dahulu")
+            Exit Sub
+        End If
+
+        If MessageBox.Show("matikan AC?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) =
+            DialogResult.No Then
+            Exit Sub
+        End If
+        SerialPort1.Write("y")
+        LabelAC.Text = "mati"
+        simpan()
+    End Sub
+
+    Private Sub Button5_Click(sender As Object, e As EventArgs) Handles Button5.Click
+        If comOpen = False Then
+            MsgBox("sambungkan arduino terlebih dahulu")
+            Exit Sub
+        End If
+
+        If MessageBox.Show("hidupkan kipas?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) =
+            DialogResult.No Then
+            Exit Sub
+        End If
+        SerialPort1.Write("3")
+        LabelKipas.Text = "hidup"
+        simpan()
+    End Sub
+
+    Private Sub Button6_Click(sender As Object, e As EventArgs) Handles Button6.Click
+        If comOpen = False Then
+            MsgBox("sambungkan arduino terlebih dahulu")
+            Exit Sub
+        End If
+
+        If MessageBox.Show("matikan kipas?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) =
+            DialogResult.No Then
+            Exit Sub
+        End If
+        SerialPort1.Write("x")
+        LabelKipas.Text = "mati"
+        simpan()
+    End Sub
+
+    Private Sub Button7_Click(sender As Object, e As EventArgs) Handles Button7.Click
+        If comOpen = False Then
+            MsgBox("sambungkan arduino terlebih dahulu")
+            Exit Sub
+        End If
+
+        If MessageBox.Show("hidupkan Dispenser?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) =
+            DialogResult.No Then
+            Exit Sub
+        End If
+        SerialPort1.Write("4")
+        LabelDispenser.Text = "hidup"
+        simpan()
+    End Sub
+
+    Private Sub Button8_Click(sender As Object, e As EventArgs) Handles Button8.Click
+        If comOpen = False Then
+            MsgBox("sambungkan arduino terlebih dahulu")
+            Exit Sub
+        End If
+
+        If MessageBox.Show("matikan Dispenser?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) =
+            DialogResult.No Then
+            Exit Sub
+        End If
+        SerialPort1.Write("w")
+        LabelDispenser.Text = "mati"
+        simpan()
+    End Sub
+
+    Private Sub Button12_Click(sender As Object, e As EventArgs) Handles Button12.Click
+        If comOpen = False Then
+            MsgBox("sambungkan arduino terlebih dahulu")
+            Exit Sub
+        End If
+
+        If MessageBox.Show("hidupkan Lampu?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) =
+            DialogResult.No Then
+            Exit Sub
+        End If
+        SerialPort1.Write("5")
+        LabelLampu.Text = "mati"
+        simpan()
+    End Sub
+
+    Private Sub Button11_Click(sender As Object, e As EventArgs) Handles Button11.Click
+        If comOpen = False Then
+            MsgBox("sambungkan arduino terlebih dahulu")
+            Exit Sub
+        End If
+
+        If MessageBox.Show("matikan Lampu?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) =
+            DialogResult.No Then
+            Exit Sub
+        End If
+        SerialPort1.Write("v")
+        LabelLampu.Text = "mati"
+        simpan()
+    End Sub
+
+    Private Sub Button13_Click(sender As Object, e As EventArgs) Handles Button13.Click
+        If comOpen = False Then
+            MsgBox("sambungkan arduino terlebih dahulu")
+            Exit Sub
+        End If
+
+        If MessageBox.Show("hidupkan Komputer?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) =
+            DialogResult.No Then
+            Exit Sub
+        End If
+        SerialPort1.Write("6")
+        LabelKomputer.Text = "hidup"
+        simpan()
+    End Sub
+
+    Private Sub Button14_Click(sender As Object, e As EventArgs) Handles Button14.Click
+        If comOpen = False Then
+            MsgBox("sambungkan arduino terlebih dahulu")
+            Exit Sub
+        End If
+
+        If MessageBox.Show("matikan Komputer?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) =
+            DialogResult.No Then
+            Exit Sub
+        End If
+        SerialPort1.Write("u")
+        LabelKomputer.Text = "mati"
+        simpan()
+    End Sub
+
+    Private Sub ViewToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles ViewToolStripMenuItem.Click
+        View.Show()
+    End Sub
+
+    Private Sub Button10_Click(sender As Object, e As EventArgs) Handles Button10.Click
+        If comOpen = False Then
+            MsgBox("sambungkan arduino terlebih dahulu")
+            Exit Sub
+        End If
+
+        If MessageBox.Show("HIDUPKAN SEMUA?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) =
+            DialogResult.No Then
+            Exit Sub
+        End If
+        SerialPort1.Write("0")
+
+        LabelTV.Text = "hidup"
+        LabelAC.Text = "hidup"
+        LabelKipas.Text = "hidup"
+        LabelDispenser.Text = "hidup"
+        LabelLampu.Text = "hidup"
+        LabelKomputer.Text = "hidup"
+        simpan()
+    End Sub
+
+    Private Sub Button9_Click(sender As Object, e As EventArgs) Handles Button9.Click
+        If comOpen = False Then
+            MsgBox("sambungkan arduino terlebih dahulu")
+            Exit Sub
+        End If
+
+        If MessageBox.Show("MATIKAN SEMUA?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) =
+            DialogResult.No Then
+            Exit Sub
+        End If
+        SerialPort1.Write("9")
+
+        LabelTV.Text = "mati"
+        LabelAC.Text = "mati"
+        LabelKipas.Text = "mati"
+        LabelDispenser.Text = "mati"
+        LabelLampu.Text = "mati"
+        LabelKomputer.Text = "mati"
+        simpan()
+    End Sub
+
+    Private Sub PortToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles PortToolStripMenuItem.Click
+
+    End Sub
+End Class
