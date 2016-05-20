@@ -1,0 +1,20 @@
+
+Imports System.Data
+Imports System.Data.SqlClient
+Module ModulKoneksi
+    Public con As SqlConnection
+    Public cmd As SqlCommand
+    Public ds As DataSet
+    Public rd As SqlDataReader
+    Public ra As SqlDataAdapter
+    Public lokasidb As String
+    Public comOpen As Boolean
+
+    Public Sub bukakoneksi()
+        lokasidb = "Data Source=NURFITRIA-PC\SQLEXPRESS;Initial Catalog=Log;Integrated Security=True;"
+        con = New SqlConnection(lokasidb)
+        If con.State = ConnectionState.Closed Then
+            con.Open()
+        End If
+    End Sub
+End Module
